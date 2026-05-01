@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gothic AR</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { overflow: hidden; background: #000; font-family: serif; }
+
+    #ar-ui {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: rgba(5,0,12,0.75);
+      border-bottom: 1px solid #3d2a4a;
+    }
+    #ar-ui a {
+      color: #9b59b6;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+    #ar-ui span {
+      color: #c9a0dc;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+    #ar-hint {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(5,0,12,0.85);
+      border: 1px solid #3d2a4a;
+      color: #a880c0;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 20px;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+    }
+    #ar-color-bar {
+      position: fixed;
+      bottom: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+    .color-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      cursor: pointer;
+    }
+  </style>
+
+  <!-- A-Frame + AR.js CDN (no install needed) -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+</head>
+<body>
+
+  <div id="ar-ui">
+    <a href="./index.html">← Back to Portfolio</a>
+    <span>◈ AR Mode — Point at Hiro Marker</span>
+  </div>
+
+  <!-- Color picker buttons -->
+  <div id="ar-color-bar">
+    <div class="color-dot" style="background:#8b0000" onclick="setARColor('#8b0000')"></div>
+    <div class="color-dot" style="background:#4b0082" onclick="setARColor('#4b0082')"></div>
+    <div class="color-dot" style="background:#b8860b" onclick="setARColor('#b8860b')"></div>
+    <div class="color-dot" style="background:#2f4f4f" onclick="setARColor('#2f4f4f')"></div>
+    <div class="color-dot" style="background:#c9a0dc" onclick="setARColor('#c9a0dc')"></div>
+  </div>
+
+  <div id="ar-hint">Print the Hiro marker · Point camera at it · Tap object to interact</div>
+
+  <!--
+    A-Frame scene with AR.js
+    The 3D object appears ON TOP of a printed Hiro marker.
+    Download the Hiro marker from:
+    https://jeromeetienne.github.io/AR.js/data/images/HIRO.jpg
+  -->
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    vr-mode-ui="enabled: false">
+
+    <a-assets>
+      <!-- Your exported scene goes here — copy scene.glb to public/models/ -->
+      <a-asset-item id="scene-model" src="./models/scene.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- Hiro marker: the printed paper target -->
+    <a-marker preset="hiro" id="hiro-marker">
+
+      <!--
+        The GLTF model appears on the marker.
+        Scale down because Blender scenes are often large.
+        Adjust scale until it looks right on your marker.
+      -->
+      <a-entity
+        id="ar-object"
+        gltf-model="#scene-model"
+        scale="0.08 0.08 0.08"
+        position="0 0 0"
+        rotation="-90 0 0"
+        class="clickable"
+        animation__idle="property: rotation; from: -90 0 0; to: -90 360 0;
+                         loop: true; dur: 6000; easing: linear;">
+      </a-entity>
+
+      <!-- Fallback if GLB not loaded yet: a simple gothic box -->
+      <a-box
+        id="ar-fallback"
+        position="0 0.5 0"
+        scale="1 1 1"
+        color="#3d0a3d"
+        opacity="0"
+        class="clickable">
+      </a-box>
+
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    // ── AR Interaction: tap object → change colour ────────────
+    const arObject = document.getElementById('ar-object');
+
+    // Tap/click on the AR object
+    arObject.addEventListener('click', () => {
+      const colors = ['#8b0000','#4b0082','#006400','#b8860b','#2f4f4f','#800080'];
+      const pick = colors[Math.floor(Math.random() * colors.length)];
+      // Apply colour override to all meshes in the model
+      arObject.setAttribute('material', 'color', pick);
+    });
+
+    // Colour bar buttons
+    window.setARColor = function(hex) {
+      arObject.setAttribute('material', 'color', hex);
+    };
+
+    // Marker found/lost feedback
+    const marker = document.getElementById('hiro-marker');
+    const hint   = document.getElementById('ar-hint');
+
+    marker.addEventListener('markerFound', () => {
+      hint.textContent = '✦ Marker found! Tap the object to interact';
+      hint.style.borderColor = '#9b59b6';
+    });
+    marker.addEventListener('markerLost', () => {
+      hint.textContent = 'Print the Hiro marker · Point camera at it · Tap object to interact';
+      hint.style.borderColor = '#3d2a4a';
+    });
+  </script>
+</body>
+</html>

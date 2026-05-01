@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gothic Portfolio</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- ── TOP BAR ─────────────────────────────────────────── -->
+  <div id="topbar">
+    <span class="topbar-title">✦ Gothic Portfolio</span>
+    <div class="topbar-btns">
+      <button id="btn-night" onclick="window.toggleDayNight()">☀ Day</button>
+      <button id="btn-sound" onclick="window.toggleSound()">♪ Sound</button>
+      <a href="./ar.html" class="topbar-link">◈ AR</a>
+      <button id="btn-vr">⬡ Enter VR</button>
+    </div>
+  </div>
+
+  <!-- ── INFO PANEL (shown on object click) ──────────────── -->
+  <div id="panel" class="panel hidden">
+    <div class="panel-header">
+      <span id="panel-icon">✦</span>
+      <h2 id="panel-title">Title</h2>
+      <button id="panel-close">✕</button>
+    </div>
+    <div id="panel-body"></div>
+    <div class="panel-footer">
+      <button id="panel-prev">← prev</button>
+      <button id="panel-next">next →</button>
+    </div>
+  </div>
+
+  <!-- ── TOOLTIP ─────────────────────────────────────────── -->
+  <div id="tooltip" class="hidden"></div>
+
+  <!-- ── HINT ────────────────────────────────────────────── -->
+  <div id="hint">Click objects · Drag to orbit · Scroll to zoom · Dbl-click resets · Tab navigates</div>
+
+  <!-- ── LOADING ──────────────────────────────────────────── -->
+  <div id="loading">
+    <div class="loading-inner">
+      <div class="loading-rune">✦</div>
+      <p id="loading-text">Summoning the darkness...</p>
+      <div id="loading-bar"><div id="loading-fill"></div></div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
