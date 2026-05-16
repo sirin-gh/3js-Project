@@ -1,0 +1,11 @@
+Place your scene.glb file in this folder (public/models/)
+
+The file should be named exactly: scene.glb
+
+Your 3D model should contain objects with these exact names for click functionality:
+- tripo_node_2cf33df9-a53a-4f7e-9751-6a0509557146 (Character/About Me)
+- hat1_clothing_0 (Hat/Skills)
+- Object_88 (Relic/Projects)
+- Object_2 (Artifact/Contact)
+
+These names can be adjusted in loader.js if needed.

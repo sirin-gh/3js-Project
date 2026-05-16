@@ -1,12 +1,11 @@
 // ============================================================
-// interaction.js  —  Hover, click, colour, camera, keyboard, touch
+// interaction.js  —  Fixed color cycling for ALL objects
 // ============================================================
 
 import * as THREE from 'three';
 import { camera, controls } from './scene.js';
-import { interactiveObjects, objectDataMap, CLICKABLE_DEFS } from './loader.js';
+import { interactiveObjects, objectDataMap, CLICKABLE_DEFS, heartbeatGlow, changeColor } from './loader.js';
 
-// ── DOM ───────────────────────────────────────────────────────
 const panel      = document.getElementById('panel');
 const panelIcon  = document.getElementById('panel-icon');
 const panelTitle = document.getElementById('panel-title');
@@ -16,11 +15,9 @@ const panelPrev  = document.getElementById('panel-prev');
 const panelNext  = document.getElementById('panel-next');
 const tooltip    = document.getElementById('tooltip');
 
-// ── Raycaster ─────────────────────────────────────────────────
 const raycaster = new THREE.Raycaster();
 const mouse     = new THREE.Vector2();
 
-// ── State ─────────────────────────────────────────────────────
 let hoveredMesh  = null;
 let selectedMesh = null;
 let tabIndex     = 0;
@@ -29,23 +26,19 @@ let mouseDownPos = { x: 0, y: 0 };
 let panelOpenIdx = 0;
 
 const savedState = new Map();
-const PALETTE    = [0x3d0a0a, 0x0a0a3d, 0x1a0a3d, 0x0a2a0a, 0x2a1a00, 0x3d0a2a, 0x1a1a1a];
-const paletteIdx = new Map();
+const objectColorIndex = new Map();
 
-// ── NDC conversion ────────────────────────────────────────────
 function toNDC(cx, cy) {
-  mouse.x =  (cx / window.innerWidth)  * 2 - 1;
+  mouse.x = (cx / window.innerWidth) * 2 - 1;
   mouse.y = -(cy / window.innerHeight) * 2 + 1;
 }
 
-// ── Raycast ───────────────────────────────────────────────────
 function getHit() {
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObjects(interactiveObjects, true);
   return hits.length > 0 ? hits[0] : null;
 }
 
-// ── Save / restore material ───────────────────────────────────
 function saveMat(mesh) {
   if (savedState.has(mesh.uuid) || !mesh.material) return;
   savedState.set(mesh.uuid, {
@@ -59,8 +52,8 @@ function highlight(mesh) {
   if (!mesh?.material) return;
   saveMat(mesh);
   if (mesh.material.emissive) {
-    mesh.material.emissive.set(0x7a2aaa);
-    mesh.material.emissiveIntensity = 1.2;
+    mesh.material.emissive.set(0xaa88ff);
+    mesh.material.emissiveIntensity = 0.9;
   }
 }
 
@@ -74,59 +67,55 @@ function unhighlight(mesh) {
   }
 }
 
-// ── Colour cycle ──────────────────────────────────────────────
+// FIXED: Cycle color for ANY object - each click changes color
 function cycleColor(mesh) {
   if (!mesh?.material?.color) return;
-  const cur  = paletteIdx.get(mesh.uuid) ?? -1;
-  const next = (cur + 1) % PALETTE.length;
-  paletteIdx.set(mesh.uuid, next);
-  const from = mesh.material.color.clone();
-  const to   = new THREE.Color(PALETTE[next]);
-  const t0   = performance.now();
-  (function lerp(now) {
-    const t = Math.min((now - t0) / 450, 1);
-    mesh.material.color.lerpColors(from, to, t);
-    if (t < 1) requestAnimationFrame(lerp);
-  })(performance.now());
+  
+  const def = objectDataMap.get(mesh.uuid);
+  if (!def || !def.colors || def.colors.length === 0) {
+    // Fallback colors if no custom palette
+    const fallbackColors = [0x8b5cf6, 0xa855f7, 0xd946ef, 0xc084fc, 0xe879f9];
+    let idx = objectColorIndex.get(mesh.uuid) ?? -1;
+    const nextIdx = (idx + 1) % fallbackColors.length;
+    objectColorIndex.set(mesh.uuid, nextIdx);
+    changeColor(mesh, fallbackColors[nextIdx], 400);
+    return;
+  }
+  
+  let idx = objectColorIndex.get(mesh.uuid) ?? -1;
+  const nextIdx = (idx + 1) % def.colors.length;
+  objectColorIndex.set(mesh.uuid, nextIdx);
+  
+  console.log(`🎨 Changing ${def.label} color to index ${nextIdx} (${def.colors[nextIdx].toString(16)})`);
+  changeColor(mesh, def.colors[nextIdx], 450);
 }
 
-// ── Scale pulse ───────────────────────────────────────────────
 function pulse(mesh) {
   if (!mesh) return;
   const orig = mesh.scale.clone();
-  const t0   = performance.now();
+  const t0 = performance.now();
   (function go(now) {
-    const t = Math.min((now - t0) / 500, 1);
-    const s = 1 + Math.sin(t * Math.PI) * 0.14;
+    const t = Math.min((now - t0) / 350, 1);
+    const s = 1 + Math.sin(t * Math.PI) * 0.1;
     mesh.scale.set(orig.x * s, orig.y * s, orig.z * s);
     if (t < 1) requestAnimationFrame(go);
     else mesh.scale.copy(orig);
   })(performance.now());
 }
 
-// ── Camera focus — keeps context, does NOT zoom in ────────────
-// Pans the view toward the clicked object while keeping the
-// camera at the same distance (like Sketchfab's "focus" orbit)
 function focusOn(mesh) {
   const wp = new THREE.Vector3();
   mesh.getWorldPosition(wp);
-
-  // Current state
+  
   const fromTarget = controls.target.clone();
   const fromCam    = camera.position.clone();
-
-  // Keep the same relative offset from target → no zoom change
-  const offset = fromCam.clone().sub(fromTarget); // camera offset vector
-
-  // New target = object world position
+  const offset = fromCam.clone().sub(fromTarget);
   const newTarget = wp.clone();
-
-  // New camera = new target + same offset (preserves distance & angle)
   const newCam = newTarget.clone().add(offset);
-
+  
   const t0 = performance.now();
   (function pan(now) {
-    const t    = Math.min((now - t0) / 900, 1);
+    const t    = Math.min((now - t0) / 700, 1);
     const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
     controls.target.lerpVectors(fromTarget, newTarget, ease);
     camera.position.lerpVectors(fromCam, newCam, ease);
@@ -135,16 +124,13 @@ function focusOn(mesh) {
   })(performance.now());
 }
 
-// ── Reset camera to full-scene view ──────────────────────────
 export function resetCamera() {
   const fromTarget = controls.target.clone();
   const fromCam    = camera.position.clone();
-  const goalTarget = new THREE.Vector3(0, 0, 0);
-
-  // Camera goes back to its saved initial distance
+  const goalTarget = new THREE.Vector3(0, 1.2, 0);
   const offset = fromCam.clone().sub(fromTarget);
   const goalCam = goalTarget.clone().add(offset);
-
+  
   const t0 = performance.now();
   (function go(now) {
     const t    = Math.min((now - t0) / 900, 1);
@@ -156,7 +142,6 @@ export function resetCamera() {
   })(performance.now());
 }
 
-// ── Get def from mesh ─────────────────────────────────────────
 function getDef(mesh) {
   if (objectDataMap.has(mesh.uuid)) return objectDataMap.get(mesh.uuid);
   let obj = mesh.parent;
@@ -168,23 +153,25 @@ function getDef(mesh) {
   return null;
 }
 
-// ── Panel ─────────────────────────────────────────────────────
 const ICONS = { 'About Me':'🕯','My Skills':'⚗','My Projects':'📖','Contact':'✉' };
 
 function showPanel(def, mesh) {
   panelOpenIdx = CLICKABLE_DEFS.findIndex(d => d.name === def.name);
   panelIcon.textContent  = def.icon ?? ICONS[def.title] ?? '✦';
   panelTitle.textContent = def.title;
-
-  const lines   = def.text.map(l => `<p>${l}</p>`).join('');
-  const swColors = ['#8b0000','#4b0082','#006400','#b8960c','#2f4f4f','#800080','#1a1a2e'];
-  const swatches = swColors.map(c =>
-    `<div class="swatch" style="background:${c}" onclick="window.__sc('${c}')"></div>`
+  
+  const lines = def.text.map(l => `<p>${l}</p>`).join('');
+  const swatches = (def.colors || [0x8b5cf6, 0xa855f7, 0xd946ef]).map(c =>
+    `<div class="swatch" style="background:#${c.toString(16).padStart(6,'0')}" 
+          onclick="window.__sc('${c.toString(16).padStart(6,'0')}')"></div>`
   ).join('');
+  
   panelBody.innerHTML = lines + `<div class="swatch-row">${swatches}</div>`;
-
+  
   window.__sc = (hex) => {
-    if (selectedMesh?.material?.color) selectedMesh.material.color.set(hex);
+    if (selectedMesh?.material?.color) {
+      changeColor(selectedMesh, parseInt(hex, 16), 300);
+    }
   };
   panel.classList.remove('hidden');
 }
@@ -196,17 +183,24 @@ function navigate(dir) {
   const def  = CLICKABLE_DEFS[panelOpenIdx];
   const mesh = interactiveObjects.find(m => m.userData?.name === def.name);
   if (mesh) selectMesh(mesh);
-  else { panelIcon.textContent = def.icon ?? '✦'; panelTitle.textContent = def.title;
-         panelBody.innerHTML = def.text.map(l=>`<p>${l}</p>`).join(''); }
+  else {
+    panelIcon.textContent = def.icon ?? '✦';
+    panelTitle.textContent = def.title;
+    panelBody.innerHTML = def.text.map(l=>`<p>${l}</p>`).join('') +
+      `<div class="swatch-row">${(def.colors || []).map(c => 
+        `<div class="swatch" style="background:#${c.toString(16).padStart(6,'0')}"></div>`
+      ).join('')}</div>`;
+  }
 }
 
-// ── Select ────────────────────────────────────────────────────
+// FIXED: Select mesh with ALL effects (heartbeat + color + pulse)
 function selectMesh(mesh) {
   if (selectedMesh && selectedMesh !== mesh) unhighlight(selectedMesh);
   selectedMesh = mesh;
   highlight(mesh);
   pulse(mesh);
-  cycleColor(mesh);
+  heartbeatGlow(mesh);      // Heartbeat effect
+  cycleColor(mesh);         // Color change on click
   focusOn(mesh);
   const def = getDef(mesh);
   if (def) showPanel(def, mesh);
@@ -217,15 +211,15 @@ window.addEventListener('mousemove', (e) => {
   const dx = e.clientX - mouseDownPos.x;
   const dy = e.clientY - mouseDownPos.y;
   if (Math.sqrt(dx*dx + dy*dy) > 5) isDragging = true;
-
+  
   toNDC(e.clientX, e.clientY);
   const hit   = getHit();
   const fresh = hit?.object ?? null;
-
+  
   if (hoveredMesh && hoveredMesh !== fresh && hoveredMesh !== selectedMesh)
     unhighlight(hoveredMesh);
   hoveredMesh = fresh;
-
+  
   if (hoveredMesh && hoveredMesh !== selectedMesh) {
     highlight(hoveredMesh);
     const def = getDef(hoveredMesh);
@@ -233,7 +227,6 @@ window.addEventListener('mousemove', (e) => {
       tooltip.textContent     = `✦  ${def.label}`;
       tooltip.style.left      = `${e.clientX + 18}px`;
       tooltip.style.top       = `${e.clientY - 12}px`;
-      tooltip.style.transform = '';
       tooltip.classList.remove('hidden');
       document.body.style.cursor = 'pointer';
     }
@@ -306,4 +299,3 @@ window.addEventListener('touchend', (e) => {
 panelClose.addEventListener('click', (e) => { e.stopPropagation(); hidePanel(); });
 panelPrev.addEventListener('click',  (e) => { e.stopPropagation(); navigate(-1); });
 panelNext.addEventListener('click',  (e) => { e.stopPropagation(); navigate(1); });
-

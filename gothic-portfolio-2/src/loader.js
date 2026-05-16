@@ -1,5 +1,5 @@
 // ============================================================
-// loader.js  —  GLTFLoader + auto-fit camera + glow objects
+// loader.js  —  GLTFLoader + Game Dev Portfolio
 // ============================================================
 
 import * as THREE from 'three';
@@ -9,61 +9,84 @@ import { scene, camera, controls,
          candleLight, candleLight2,
          moonLight, fillLight } from './scene.js';
 
-// ── Clickable object definitions ─────────────────────────────
+// ── Clickable object definitions - GAME DEV PORTFOLIO ─────────
 export const CLICKABLE_DEFS = [
   {
     name:  'tripo_node_2cf33df9-a53a-4f7e-9751-6a0509557146',
-    label: 'The Character',
+    label: 'Game Developer',
     title: 'About Me',
-    icon:  '🕯',
+    icon:  '🎮',
+    colors: [0x3a86ff, 0x8338ec, 0xf4066a, 0xff006e, 0xfb5607],
     text: [
-      'A developer who dwells between light and shadow.',
-      'Passionate about creative coding, Three.js, and building immersive web experiences.',
-      'Welcome to my gothic portfolio.',
+      '🎮 Passionate Game Developer with experience in Unity, Three.js, and full-stack development',
+      '🕹️ Creating immersive gameplay systems, AI behaviors, and interactive 3D experiences',
+      '⚡ Skilled in C#, Luau, TypeScript, Python, and Java',
+      '🌟 Focused on modular systems, optimization, and player engagement',
     ],
   },
   {
     name:  'hat1_clothing_0',
-    label: 'The Hat',
-    title: 'My Skills',
-    icon:  '⚗',
+    label: 'Game Dev Skills',
+    title: 'Technical Skills',
+    icon:  '⚙️',
+    colors: [0x3a86ff, 0x8338ec, 0xf4066a, 0xffbe0b, 0xfb5607],
     text: [
-      '✦ Three.js · WebGL · GLSL Shaders',
-      '✦ AR.js · MindAR · WebXR',
-      '✦ React · TypeScript · Vite · Node.js',
-      '✦ Blender · 3D Modelling · GLTF Pipeline',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '🎮 GAME DEVELOPMENT',
+      '• Engines: Unity (C#), Roblox (Luau)',
+      '• 3D Art: Blender (Modeling, Animation), Three.js',
+      '• AI: Behavior Trees, FOV Systems, NavMesh',
+      '• VR: Physics-based interaction, XR Toolkit',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '💻 FULL-STACK & SYSTEMS',
+      '• Languages: Python, Java, PHP, TypeScript, C#',
+      '• Web/Cloud: Angular, Firebase, HTML5/CSS3',
+      '• Databases: MySQL, SQL Plus, Relational Design',
+      '• Tools: Git, Trello (Agile), REST APIs, Gizmo Debugger',
     ],
   },
   {
     name:  'Object_88',
-    label: 'Ancient Relic',
-    title: 'My Projects',
-    icon:  '📖',
+    label: 'Game Projects',
+    title: 'Featured Projects',
+    icon:  '🏆',
+    colors: [0x3a86ff, 0x8338ec, 0xf4066a, 0xffbe0b, 0x52b788],
     text: [
-      '✦ Gothic Portfolio — Three.js + WebXR interactive scene',
-      '✦ Shadow Engine — WebGL shader experiments',
-      '✦ Midnight API — Node.js REST backend',
-      '✦ Abyss UI — Dark-mode component library',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '🧠 MODULAR AI BEHAVIOR TREE | Unity (C#)',
+      '• Developed a custom Behavior Tree (Selector/Sequence) for complex NPC decision-making',
+      '• Engineered a FOV system using Raycasts and Dot Products for realistic detection',
+      '• Integrated NavMesh for pathfinding and built a custom Gizmo debugger for vision cones',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '🥽 VR ESCAPE ROOM | Unity & Blender',
+      '• Programmed a physics-based inventory system and interactive VR object-pickup logic',
+      '• Modeled/animated assets in Blender, optimizing topology for real-time performance',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '🏙️ 3D URBAN VISUALIZATION | Angular & Three.js',
+      '• Built an interactive 3D city viewer with real-time Firebase data synchronization',
+      '• Implemented dynamic building highlighting and data-driven UI overlays',
     ],
   },
   {
     name:  'Object_2',
-    label: 'The Artifact',
-    title: 'Contact',
-    icon:  '✉',
+    label: 'Contact',
+    title: 'Get In Touch',
+    icon:  '📫',
+    colors: [0x3a86ff, 0x8338ec, 0xf4066a, 0xffbe0b, 0x52b788],
     text: [
-      'Reach out if you dare...',
-      'email@portfolio.com',
-      'github.com/yourusername',
-      'linkedin.com/in/yourusername',
+      '📧 Email: gamedev@portfolio.com',
+      '🐙 GitHub: github.com/gamedevportfolio',
+      '💼 LinkedIn: linkedin.com/in/gamedevportfolio',
+      '🎮 Itch.io: gamedev.itch.io',
+      '',
+      '✨ Open for game dev and interactive 3D opportunities',
+      '🚀 Let\'s build something amazing together!',
     ],
   },
 ];
 
 export const interactiveObjects = [];
 export const objectDataMap      = new Map();
-
-// Track meshes that get special glow so we can animate them
 export const glowMeshes = [];
 
 const fillBar  = document.getElementById('loading-fill');
@@ -75,100 +98,128 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5
 const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 
-// ── Apply purple/gold glow emissive to a mesh ─────────────────
-function applyGlow(mesh, color = 0x9b59b6, intensity = 1.2) {
+// ── Apply glow to meshes ─────────────────────────────────────
+export function applyGlow(mesh, color = 0x3a86ff, intensity = 0.7) {
   if (!mesh?.material) return;
-  // Clone material so we don't affect other objects sharing it
+  if (!mesh.userData.originalMaterial) {
+    mesh.userData.originalMaterial = mesh.material.clone();
+  }
   mesh.material = mesh.material.clone();
   mesh.material.emissive = new THREE.Color(color);
   mesh.material.emissiveIntensity = intensity;
-  glowMeshes.push({ mesh, baseIntensity: intensity });
+  glowMeshes.push({ mesh, baseIntensity: intensity, baseColor: color, isCharacter: false });
 }
 
-// ── Boost character material brightness ───────────────────────
-function boostCharacter(obj) {
-  obj.traverse(child => {
-    if (!child.isMesh || !child.material) return;
-    child.material = child.material.clone();
-
-    // Make sure it's not too dark
-    if (child.material.color) {
-      const col = child.material.color;
-      // Brighten dark materials by scaling HSL lightness
-      const hsl = {};
-      col.getHSL(hsl);
-      if (hsl.l < 0.25) {
-        col.setHSL(hsl.h, hsl.s, Math.max(hsl.l * 3, 0.3));
-      }
+// ── Heartbeat animation for clicked objects ───────────────────
+export function heartbeatGlow(mesh) {
+  if (!mesh?.material) return;
+  
+  const originalIntensity = mesh.material.emissiveIntensity || 0.5;
+  const startTime = performance.now();
+  const duration = 550;
+  
+  function animateHeartbeat(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    
+    let intensity;
+    if (t < 0.15) {
+      intensity = originalIntensity + 1.5 * (t / 0.15);
+    } else if (t < 0.35) {
+      intensity = originalIntensity + 1.5 * (1 - (t - 0.15) / 0.2);
+    } else if (t < 0.5) {
+      intensity = originalIntensity + 0.8 * ((t - 0.35) / 0.15);
+    } else if (t < 0.65) {
+      intensity = originalIntensity + 0.8 * (1 - (t - 0.5) / 0.15);
+    } else {
+      intensity = originalIntensity;
     }
-
-    // Add a soft purple emissive glow so character stands out
-    child.material.emissive = new THREE.Color(0x3d1a5a);
-    child.material.emissiveIntensity = 0.8;
-    glowMeshes.push({ mesh: child, baseIntensity: 0.8, isCharacter: true });
-  });
-
-  // Add a dedicated point light right on the character
-  const charLight = new THREE.PointLight(0xcc88ff, 3.0, 999);
-  charLight.name = 'charLight';
-  scene.add(charLight);
-
-  // Position it at the character's world position
-  const wp = new THREE.Vector3();
-  obj.getWorldPosition(wp);
-  charLight.position.set(wp.x, wp.y + 2, wp.z + 1);
-  console.log(`Character light placed at ${wp.x.toFixed(1)}, ${wp.y.toFixed(1)}, ${wp.z.toFixed(1)}`);
+    
+    mesh.material.emissiveIntensity = intensity;
+    
+    if (t < 1) {
+      requestAnimationFrame(animateHeartbeat);
+    } else {
+      mesh.material.emissiveIntensity = originalIntensity;
+    }
+  }
+  
+  requestAnimationFrame(animateHeartbeat);
 }
 
-// ── Auto-fit camera to scene bounding box ────────────────────
+// ── Smooth color change ───────────────────────────────────────
+export function changeColor(mesh, newColor, duration = 400) {
+  if (!mesh?.material?.color) return;
+  
+  const fromColor = mesh.material.color.clone();
+  const toColor = new THREE.Color(newColor);
+  const startTime = performance.now();
+  
+  function animateColor(now) {
+    const elapsed = now - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    mesh.material.color.lerpColors(fromColor, toColor, eased);
+    
+    if (t < 1) {
+      requestAnimationFrame(animateColor);
+    }
+  }
+  
+  requestAnimationFrame(animateColor);
+}
+
+// ── Make clickable objects glow properly ──────────────────────
+function setupClickableGlow(obj, def) {
+  obj.traverse(child => {
+    if (child.isMesh && child.material) {
+      if (!child.userData.originalColor && child.material.color) {
+        child.userData.originalColor = child.material.color.clone();
+      }
+      
+      child.material = child.material.clone();
+      child.material.emissive = new THREE.Color(0x3a86ff);
+      child.material.emissiveIntensity = 0.4;
+      glowMeshes.push({ 
+        mesh: child, 
+        baseIntensity: 0.4, 
+        isCharacter: def.title === 'About Me',
+        objectDef: def
+      });
+    }
+  });
+}
+
+// ── Auto-fit camera ──────────────────────────────────────────
 function fitCamera(root) {
   const box    = new THREE.Box3().setFromObject(root);
   const size   = box.getSize(new THREE.Vector3());
   const centre = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z);
-
-  console.log(`Scene bbox: ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}`);
-  console.log(`Centre: (${centre.x.toFixed(1)}, ${centre.y.toFixed(1)}, ${centre.z.toFixed(1)})`);
-  console.log(`Max dim: ${maxDim.toFixed(1)}`);
-
-  // Pull camera back enough to see the WHOLE scene
+  
   const fov  = camera.fov * (Math.PI / 180);
-  const dist = (maxDim / 2) / Math.tan(fov / 2) * 1.2; //  padding
-
-  // Isometric-ish angle: upper right front
+  const dist = (maxDim / 2) / Math.tan(fov / 2) * 1.25;
+  
   camera.position.set(
     centre.x + dist * 0.6,
-    centre.y + dist * 0.5,
+    centre.y + dist * 0.45,
     centre.z + dist * 0.6
   );
   camera.near = maxDim * 0.0005;
   camera.far  = maxDim * 5;
   camera.updateProjectionMatrix();
-
+  
   controls.target.copy(centre);
-  // Keep minDistance large enough to see full scene
-  controls.minDistance = maxDim * 0.05;
-  controls.maxDistance = maxDim * 5;
+  controls.minDistance = maxDim * 0.08;
+  controls.maxDistance = maxDim * 3.5;
   controls.update();
-
-  // Scale lights to scene size
+  
   const L = maxDim;
-  moonLight.position.set(centre.x + L, centre.y + L * 1.5, centre.z + L);
-  moonLight.shadow.camera.left   = -L * 2;
-  moonLight.shadow.camera.right  =  L * 2;
-  moonLight.shadow.camera.top    =  L * 2;
-  moonLight.shadow.camera.bottom = -L * 2;
-  moonLight.shadow.camera.far    =  L * 6;
-  moonLight.shadow.camera.updateProjectionMatrix();
-
-  fillLight.position.set(centre.x - L, centre.y + L, centre.z - L);
-
-  // Place candle lights inside the room
-  candleLight.position.set(centre.x - L * 0.2, centre.y + L * 0.2, centre.z - L * 0.2);
-  candleLight.distance  = L * 4;
-  candleLight2.position.set(centre.x + L * 0.2, centre.y + L * 0.2, centre.z + L * 0.2);
-  candleLight2.distance = L * 4;
-
+  moonLight.position.set(centre.x + L * 0.7, centre.y + L * 0.6, centre.z + L * 0.7);
+  fillLight.position.set(centre.x - L * 0.5, centre.y + L * 0.4, centre.z - L * 0.5);
+  candleLight.position.set(centre.x - 0.8, centre.y + 0.8, centre.z);
+  candleLight2.position.set(centre.x + 1.5, centre.y + 0.8, centre.z + 1.2);
+  
   return { centre, maxDim };
 }
 
@@ -176,62 +227,44 @@ function fitCamera(root) {
 export function loadScene(onReady) {
   gltfLoader.load(
     './models/scene.glb',
-
+    
     (gltf) => {
       const root = gltf.scene;
-
-      // Enable shadows on all meshes
+      
       root.traverse(obj => {
         if (obj.isMesh) {
           obj.castShadow    = true;
           obj.receiveShadow = true;
         }
       });
-
+      
       scene.add(root);
-
-      // Auto-fit camera to scene
       const { centre, maxDim } = fitCamera(root);
-
-      // ── Apply glow to specific objects ───────────────────
-      // Candles — golden glow
-      const candleKeywords = ['candle', 'flame', 'torch', 'lamp'];
-      // Crystal / potion — purple/green glow
-      const crystalKeywords = ['crystal', 'potion', 'gem', 'orb', 'prism'];
-      // Scroll / book — soft amber glow
-      const scrollKeywords = ['scroll', 'book', 'paper'];
-
+      
+      // Apply glows to candles and crystals
       root.traverse(obj => {
         if (!obj.isMesh) return;
         const n = obj.name.toLowerCase();
-
-        if (candleKeywords.some(k => n.includes(k))) {
-          applyGlow(obj, 0xff9900, 2.5);   // orange-gold
-        } else if (crystalKeywords.some(k => n.includes(k))) {
-          applyGlow(obj, 0x9b59b6, 2.0);   // purple
-        } else if (scrollKeywords.some(k => n.includes(k))) {
-          applyGlow(obj, 0xb8860b, 1.2);   // dark gold
+        
+        if (n.includes('candle') || n.includes('flame') || n.includes('torch')) {
+          applyGlow(obj, 0xff8844, 1.0);
+        } else if (n.includes('crystal') || n.includes('gem') || n.includes('orb')) {
+          applyGlow(obj, 0x3a86ff, 0.8);
+        } else if (n.includes('book') || n.includes('scroll')) {
+          applyGlow(obj, 0xccaa66, 0.5);
         }
       });
-
-      // ── Boost character visibility ────────────────────────
-      const charObj = root.getObjectByName(
-        'tripo_node_2cf33df9-a53a-4f7e-9751-6a0509557146'
-      );
-      if (charObj) {
-        boostCharacter(charObj);
-        console.log('✓ Character boosted');
-      } else {
-        console.warn('⚠ Character object not found for boost');
-      }
-
-      // ── Tag clickable objects ─────────────────────────────
+      
+      // Tag clickable objects
       let found = 0;
       for (const def of CLICKABLE_DEFS) {
         const obj = root.getObjectByName(def.name);
         if (obj) {
           found++;
-          console.log(`✓ Clickable: "${def.name}"`);
+          console.log(`✅ Found clickable: "${def.name}" (${def.title})`);
+          
+          setupClickableGlow(obj, def);
+          
           obj.traverse(child => {
             if (child.isMesh) {
               child.userData = { ...def };
@@ -241,53 +274,39 @@ export function loadScene(onReady) {
               }
             }
           });
-          if (obj.isMesh && !interactiveObjects.includes(obj)) {
-            obj.userData = { ...def };
-            interactiveObjects.push(obj);
-            objectDataMap.set(obj.uuid, def);
-          }
         } else {
-          console.warn(`⚠ Not found: "${def.name}"`);
+          console.warn(`⚠ NOT FOUND: "${def.name}" - check spelling in your GLB file`);
         }
       }
-      console.log(`Tagged ${found}/${CLICKABLE_DEFS.length} clickable objects`);
-
-      // Log all names for debugging
-      console.group('All scene objects:');
-      root.traverse(o => { if (o.name) console.log(`${o.type}: "${o.name}"`); });
+      console.log(`✅ Tagged ${found}/${CLICKABLE_DEFS.length} clickable objects`);
+      
+      console.group('📦 All objects in scene:');
+      root.traverse(o => { if (o.name) console.log(`  - "${o.name}"`); });
       console.groupEnd();
-
+      
       if (fillBar) fillBar.style.width = '100%';
       setTimeout(() => {
         const el = document.getElementById('loading');
         if (el) { el.classList.add('fade-out'); setTimeout(() => el.remove(), 900); }
       }, 400);
-
+      
       if (onReady) onReady(root, { centre, maxDim });
     },
-
+    
     (xhr) => {
       if (xhr.lengthComputable) {
         const pct = Math.round((xhr.loaded / xhr.total) * 100);
-        if (fillBar)  fillBar.style.width  = `${pct}%`;
+        if (fillBar) fillBar.style.width = `${pct}%`;
         if (loadText) loadText.textContent = `Loading scene... ${pct}%`;
       }
     },
-
+    
     (err) => {
-      console.error('GLB load failed:', err);
+      console.error('❌ GLB load failed:', err);
       if (loadText) {
-        loadText.textContent = '⚠ scene.glb not found — see README';
+        loadText.textContent = '⚠ scene.glb not found — place your model in public/models/';
         loadText.style.color = '#ff6666';
       }
-      setTimeout(() => {
-        const el = document.getElementById('loading');
-        if (el) { el.classList.add('fade-out'); setTimeout(() => el.remove(), 900); }
-      }, 1500);
     }
-  ); 
-
-  
-} 
-
-
+  );
+}

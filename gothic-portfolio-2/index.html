@@ -10,18 +10,21 @@
 
   <canvas id="canvas"></canvas>
 
-  <!-- ── TOP BAR ─────────────────────────────────────────── -->
+  <!-- ── TOP BAR (UPDATED with new buttons) ──────────────────── -->
   <div id="topbar">
     <span class="topbar-title">✦ Gothic Portfolio</span>
     <div class="topbar-btns">
       <button id="btn-night" onclick="window.toggleDayNight()">☀ Day</button>
       <button id="btn-sound" onclick="window.toggleSound()">♪ Sound</button>
+      <button id="btn-weather" onclick="window.toggleWeather()">🔥 Weather</button>
+      <button id="btn-bloom" onclick="window.toggleBloom()">✨ Bloom: ON</button>
+      <button id="btn-afterimage" onclick="window.toggleAfterimage()">👻 Ghost: OFF</button>
+      <button id="btn-vignette" onclick="window.toggleVignette()">🎭 Vignette: ON</button>
       <a href="./ar.html" class="topbar-link">◈ AR</a>
-      <button id="btn-vr">⬡ Enter VR</button>
     </div>
   </div>
 
-  <!-- ── INFO PANEL (shown on object click) ──────────────── -->
+  <!-- ── INFO PANEL ─────────────────────────────────────────── -->
   <div id="panel" class="panel hidden">
     <div class="panel-header">
       <span id="panel-icon">✦</span>
@@ -35,13 +38,13 @@
     </div>
   </div>
 
-  <!-- ── TOOLTIP ─────────────────────────────────────────── -->
+  <!-- ── TOOLTIP ────────────────────────────────────────────── -->
   <div id="tooltip" class="hidden"></div>
 
-  <!-- ── HINT ────────────────────────────────────────────── -->
-  <div id="hint">Click objects · Drag to orbit · Scroll to zoom · Dbl-click resets · Tab navigates</div>
+  <!-- ── HINT ───────────────────────────────────────────────── -->
+  <div id="hint">Click objects · Drag to orbit · Scroll to zoom · Try the new Weather & Effects buttons!</div>
 
-  <!-- ── LOADING ──────────────────────────────────────────── -->
+  <!-- ── LOADING ─────────────────────────────────────────────── -->
   <div id="loading">
     <div class="loading-inner">
       <div class="loading-rune">✦</div>
@@ -51,5 +54,13 @@
   </div>
 
   <script type="module" src="./src/main.js"></script>
+  
+  <script>
+    // Make functions globally available
+    window.toggleBloom = () => import('./src/scene.js').then(m => m.toggleBloom());
+    window.toggleAfterimage = () => import('./src/scene.js').then(m => m.toggleAfterimage());
+    window.toggleVignette = () => import('./src/scene.js').then(m => m.toggleVignette());
+    window.toggleWeather = () => import('./src/main.js').then(m => m.toggleWeather());
+  </script>
 </body>
 </html>
