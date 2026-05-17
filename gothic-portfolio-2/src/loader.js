@@ -225,8 +225,12 @@ function fitCamera(root) {
 
 // ── Load scene.glb ────────────────────────────────────────────
 export function loadScene(onReady) {
-  gltfLoader.load(
-    './models/scene.glb',
+  // Try multiple paths (GitHub Pages fix)
+const modelPath = window.location.hostname === 'sirin-gh.github.io' 
+    ? '/3js-Project/gothic-portfolio-2/public/models/scene.glb'
+    : './models/scene.glb';
+    
+gltfLoader.load(modelPath,
     
     (gltf) => {
       const root = gltf.scene;
