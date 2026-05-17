@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test</title></head>
+<body>
+  <h1>Vercel is working!</h1>
+  <p>If you see this, the problem is your Three.js paths.</p>
+  <script>
+    console.log('Test page loaded');
+    fetch('/src/main.js')
+      .then(r => r.ok ? console.log('✅ main.js found') : console.log('❌ main.js not found'))
+      .catch(e => console.log('Error:', e));
+  </script>
+</body>
+</html>

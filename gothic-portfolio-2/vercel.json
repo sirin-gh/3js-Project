@@ -1,0 +1,12 @@
+{
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "routes": [
+    { "src": "/src/(.*)", "dest": "/src/$1" },
+    { "src": "/public/(.*)", "dest": "/public/$1" },
+    { "src": "/models/(.*)", "dest": "/public/models/$1" },
+    { "src": "/sounds/(.*)", "dest": "/public/sounds/$1" },
+    { "src": "/ar.html", "dest": "/ar.html" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
+}
