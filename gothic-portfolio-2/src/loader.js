@@ -223,16 +223,35 @@ function fitCamera(root) {
   return { centre, maxDim };
 }
 
+// ── Get correct model path for GitHub Pages ───────────────────
+function getModelPath() {
+  // Check if we're on GitHub Pages
+  const hostname = window.location.hostname;
+  console.log('📍 Hostname:', hostname);
+  
+  if (hostname === 'sirin-gh.github.io') {
+    // GitHub Pages path
+    const path = '/3js-Project/gothic-portfolio-2/public/models/scene.glb';
+    console.log('🔗 Using GitHub Pages path:', path);
+    return path;
+  }
+  
+  // Local development path
+  const path = './models/scene.glb';
+  console.log('🔗 Using local path:', path);
+  return path;
+}
+
 // ── Load scene.glb ────────────────────────────────────────────
 export function loadScene(onReady) {
-  // Try multiple paths (GitHub Pages fix)
-const modelPath = window.location.hostname === 'sirin-gh.github.io' 
-    ? '/3js-Project/gothic-portfolio-2/public/models/scene.glb'
-    : './models/scene.glb';
-    
-gltfLoader.load(modelPath,
+  const modelPath = getModelPath();
+  console.log('🚀 Loading model from:', modelPath);
+  
+  gltfLoader.load(
+    modelPath,
     
     (gltf) => {
+      console.log('✅ Model loaded successfully!');
       const root = gltf.scene;
       
       root.traverse(obj => {
@@ -302,11 +321,13 @@ gltfLoader.load(modelPath,
         const pct = Math.round((xhr.loaded / xhr.total) * 100);
         if (fillBar) fillBar.style.width = `${pct}%`;
         if (loadText) loadText.textContent = `Loading scene... ${pct}%`;
+        console.log(`📦 Loading progress: ${pct}%`);
       }
     },
     
     (err) => {
       console.error('❌ GLB load failed:', err);
+      console.error('❌ Tried path:', modelPath);
       if (loadText) {
         loadText.textContent = '⚠ scene.glb not found — place your model in public/models/';
         loadText.style.color = '#ff6666';
